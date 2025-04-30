@@ -19,7 +19,10 @@ function lerConteudoDoArquivo(arquivo) {
         //url: leitor.result (retorna a url da imagem em data:imagem/base64)
         //nome: arquivo.name (name é o nome + extensão do arquivo enviado)
         leitor.onload = () => {
-            resolve({ url: leitor.result, nome: arquivo.name });
+            resolve({
+                url: leitor.result,
+                nome: arquivo.name
+            });
         }
         //se o arquivo não puder ser lido, aparece uma mensagem de erro na catch abaixo
         leitor.onerror = () => {
