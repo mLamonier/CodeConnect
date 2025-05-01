@@ -107,7 +107,7 @@ form div input {
     height: 39px;
 }
 
-texarea {
+textarea {
     height: 161px;
 }
 
@@ -123,6 +123,8 @@ texarea {
 .lista-tags {
     display: flex;
     user-select: none;
+    gap: 0.5em;
+    flex-wrap: wrap;
 }
 
 .lista-tags li img{

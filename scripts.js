@@ -1,34 +1,32 @@
 const uploadBtn = document.getElementById("upload-btn");
-const inputUpload = document.getElementById("image-upload")
+const inputUpload = document.getElementById("image-upload");
 
-//atribui um evento de click no botão 'carregar imagem', como se estivesse
-//clicando no campo input do type file que está com display none
+// Adiciona um evento de clique no botão 'carregar imagem' para simular um clique no input de arquivo (que está oculto)
 uploadBtn.addEventListener("click", () => {
     inputUpload.click();
-})
+});
 
-//uma função que retorna uma promessa
+// Função que retorna uma promessa para ler o conteúdo de um arquivo
 function lerConteudoDoArquivo(arquivo) {
-    //uma promise é um objeto que recebe 2 parâmetros
-    //resolve: quando a promessa é cumprida
-    //reject: quando a promessa não pode ser cumprida
+    // Uma promessa é um objeto que pode ser resolvido (cumprido) ou rejeitado (não cumprido)
     return new Promise((resolve, reject) => {
-        //API FileReader que faz com que seja possível usar métodos de leitura de arquivos
+        // Cria uma instância do FileReader para ler o arquivo
         const leitor = new FileReader();
-        //se o arquivo for lido, o método resolve é executado, captando 2 propriedades do arquivo enviado
-        //url: leitor.result (retorna a url da imagem em data:imagem/base64)
-        //nome: arquivo.name (name é o nome + extensão do arquivo enviado)
+        
+        // Executado quando o arquivo é lido com sucesso
         leitor.onload = () => {
             resolve({
-                url: leitor.result,
-                nome: arquivo.name
+                url: leitor.result, // URL da imagem em formato base64
+                nome: arquivo.name // Nome do arquivo com extensão
             });
         }
-        //se o arquivo não puder ser lido, aparece uma mensagem de erro na catch abaixo
+        
+        // Executado se ocorrer um erro durante a leitura do arquivo
         leitor.onerror = () => {
-            reject(`Erro na leitura do arquivo ${arquivo.name}`)
+            reject(`Erro na leitura do arquivo ${arquivo.name}`); // Mensagem de erro
         }
-        //cria uma url Data para o arquivo, é utilizada no resolve quando o arquivo for lido
+        
+        // Inicia a leitura do arquivo como uma URL Data
         leitor.readAsDataURL(arquivo);
     });
 }
@@ -36,25 +34,152 @@ function lerConteudoDoArquivo(arquivo) {
 const imagemPrincipal = document.querySelector('.main-imagem');
 const nomeDaImagem = document.querySelector('.container-imagem-nome p');
 
-//quando haver um evento de 'mudança' na tag input type file, isso acontece:
-//o evento de mudança cria uma function async (assíncrona)
+// Adiciona um evento de mudança no input de arquivo para lidar com a seleção de um novo arquivo
 inputUpload.addEventListener('change', async (evento) => {
-    //este código pega o evento de mudança de arquivos
-    const arquivo = evento.target.files[0];
+    const arquivo = evento.target.files[0]; // Obtém o primeiro arquivo selecionado
 
-    //então SE exister arquivo nessa mudança, acontece isso:
-    if (arquivo){
-        //try = tente isso
+    //faz uma verificação se o arquivo é .png, .jpeg ou .jpg
+    if(!arquivo.type.match('image/png') && !arquivo.type.match('image/jpeg') && !arquivo.type.match('image/jpg')) {
+        alert('Por favor, selecione uma imagem PNG, JPEG ou JPG');
+        return;
+    }
+
+    //verifica se o arquivo tem um tamanho até 5MB
+    //1 megabyte = 1024 kilobytes   |   1 kylobyte = 1024 bytes
+    //primeiro se acha 5KB pra depois transformar em 5MB
+    if(arquivo.size > 5 * 1024 * 1024) { //aqui tem que transformar bytes em megabytes
+        alert('A imagem deve ter no máximo 5MB.')
+        return;
+    }
+
+    // Se um arquivo foi selecionado, tenta ler seu conteúdo
+    if (arquivo) {
         try {
-            //aqui o comando await é usado antes da function porque ele tem a função de fazer 'esperar'
-            //um retorno da function, ou seja, ele a torna sincrona aqui para que o código possa funcionar depois disso
+            // Aguarda a leitura do arquivo, tornando a função assíncrona
             const conteudoDoArquivo = await lerConteudoDoArquivo(arquivo);
-            //tente o retorno da promise, agora é possivel pegar os dados do arquivo
+            // Atualiza a imagem e o nome com os dados do arquivo lido
             imagemPrincipal.src = conteudoDoArquivo.url;
             nomeDaImagem.textContent = conteudoDoArquivo.nome;
-        //catch = se deu erro na tentativa, faça isso
-        } catch (erro) {
-            console.error('Erro na leitura do arquivo:', erro);
+        } catch (error) {
+            // Captura e exibe qualquer erro que ocorra durante a leitura do arquivo
+            console.error('Erro na leitura do arquivo:', error);
         }
     }
+});
+
+const inputTags = document.getElementById('categoria');
+const listaTags = document.querySelector('.lista-tags');
+
+listaTags.addEventListener('click', (evento) => {
+    if (evento.target.classList.contains('remove-tag')) {
+        const tagQueQueremosRemover = evento.target.parentElement;
+        listaTags.removeChild(tagQueQueremosRemover);
+    }
+})
+
+const tagsDisponiveis = ['Front-end', 'Programação', 'Data science', 'Full-stack', 'HTML', 'CSS', 'Javascript'];
+
+async function verificaTagsDisponiveis(tagTexto){
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(tagsDisponiveis.includes(tagTexto));
+        }, 1000) //1000 = 1 segundo de atraso (simulando uma solicitação para o banco de dados)
+    })
+}
+
+inputTags.addEventListener('keypress', async (evento) => {
+    if (evento.key == 'Enter') {
+        evento.preventDefault();
+        const tagTexto = inputTags.value[0].toUpperCase() + inputTags.value.substring(1);
+        if (tagTexto !== '') {
+            try {    
+                const tagExiste = await verificaTagsDisponiveis(tagTexto);
+                if (tagExiste) {
+                    const tagNova = document.createElement('li');
+                    tagNova.innerHTML = `
+                        <p>${tagTexto}</p>
+                        <img src="./img/close-black.svg" class="remove-tag">
+                    `
+                    listaTags.appendChild(tagNova)
+                    inputTags.value = '';
+                } else {
+                    alert('Tag não foi encontrada.');
+                }
+            } catch (error) {
+                console.error('Erro ao verificar a existência da tag:', error);
+                alert('Erro ao verificar a existência da tag. Verifique o console para mais detalhes.');
+            }
+        }
+    }
+})
+
+const botaoPublicar = document.querySelector('.botao-publicar');
+
+async function publicarProjeto(nomeDoProjeto, descricaoDoProjeto, tagsProjeto) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const deuCerto = Math.random() > 0.5;
+
+            if (deuCerto) {
+                resolve('Projeto publicado com sucesso!')
+            } else {
+                reject('Erro ao publicar o projeto.');
+            }
+        }, 2000);
+    })
+}
+
+botaoPublicar.addEventListener('click', async (evento) => {
+    evento.preventDefault();
+
+    const nomeDoProjeto = document.getElementById('nome').value;
+    const descricaoDoProjeto = document.getElementById('descricao').value;
+    //cria um array a partir de uma nodelist (Array.from) de todas as tags P dentro da listaTags (ul)
+    //para pegar somente o textContent é necessário usar a função map informando o que queremos pegar entre parenteses
+    //só é possível usar a função map em um array, não é possível usar em uma NodeList
+    const tagsProjeto = Array.from(listaTags.querySelectorAll('p')).map((tag) => tag.textContent);
+
+    if (nomeDoProjeto == ''){
+        alert('O campo "Nome do Projeto" não pode ser vazio');
+        return;
+    }
+
+    if (descricaoDoProjeto == ''){
+        alert('O campo "Descrição" não pode ser vazio');
+        return;
+    }
+
+    if (tagsProjeto.length == 0 && inputTags.value !== ''){
+        alert('Aperte a tecla "Enter" no campo "Tags" para inserir a tag desejada');
+        return;
+    }
+
+    if (tagsProjeto.length == 0){
+        alert('O campo "Tags" deve conter no mínimo 1 tag');
+        return;
+    }
+
+    try {
+        const resultado = await publicarProjeto(nomeDoProjeto, descricaoDoProjeto, tagsProjeto);
+        console.log(resultado);
+        alert('Deu tudo certo!');
+    } catch (error) {
+        console.log('Deu errado: ', error);
+        alert('Deu tudo errado!');
+    }
+})
+
+const botaoDescartar = document.querySelector('.botao-descartar');
+
+botaoDescartar.addEventListener('click', (evento) => {
+    evento.preventDefault();
+
+    const formulario = document.querySelector('form');
+    //reseta todos os campos input dentro do form selecionado
+    formulario.reset();
+
+    imagemPrincipal.src = './img/imagem1.png';
+    nomeDaImagem.textContent = 'image_projeto.png';
+    
+    listaTags.innerHTML = '';
 })
